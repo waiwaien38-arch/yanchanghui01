@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2024年中国演唱会城市票房热力图</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            color: #8892b0;
+            letter-spacing: 2px;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .map-section {
+            flex: 1.2;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .chart-section {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ccd6f6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #ff6b6b, #feca57);
+            border-radius: 2px;
+        }
+        #mapChart {
+            width: 100%;
+            height: 550px;
+        }
+        #barChart {
+            width: 100%;
+            height: 550px;
+        }
+        .tooltip-custom {
+            background: rgba(20, 20, 40, 0.95) !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            border-radius: 12px !important;
+            padding: 15px !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5) !important;
+        }
+        .city-detail-popup {
+            position: absolute;
+            background: rgba(20, 20, 40, 0.95);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 320px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(20px);
+        }
+        .popup-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .popup-rank {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .rank-1 { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #1a1a2e; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #1a1a2e; }
+        .rank-other { background: linear-gradient(135deg, #4a5568, #2d3748); color: #fff; }
+        .popup-city-name {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .popup-city-rank {
+            font-size: 12px;
+            color: #8892b0;
+        }
+        .popup-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #8892b0;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-value.highlight {
+            color: #ff6b6b;
+        }
+        .mini-bar-chart {
+            margin-top: 15px;
+            height: 120px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #8892b0;
+        }
+        .legend-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #8892b0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .hint {
+            text-align: center;
+            font-size: 13px;
+            color: #64ffda;
+            margin-top: 10px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>02 城市争霸：哪里是演唱会之城？</h1>
+            <div class="subtitle">2024年大型演唱会城市票房TOP10 · 数据来源：中国演出行业协会 × 灯塔专业版</div>
+        </div>
+
+        <div class="main-content">
+            <div class="map-section">
+                <div class="section-title">城市票房热力分布</div>
+                <div id="mapChart"></div>
+                <div class="hint">👆 鼠标悬停城市气泡查看详情</div>
+                <div class="legend-info">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ff4757;"></div>
+                        <span>票房 > 30亿</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ff6348;"></div>
+                        <span>票房 20-30亿</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ff9f43;"></div>
+                        <span>票房 10-20亿</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="section-title">城市票房TOP10榜单</div>
+                <div id="barChart"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            数据来源：中国演出行业协会 × 灯塔专业版《2024大型营业性演出市场趋势及特点分析》| 2024年大型演唱会票房突破260亿元，同比增长78.1%
+        </div>
+    </div>
+
+    <script>
+        // 城市数据
+        const cityData = [
+            { name: '上海', rank: 1, boxOffice: 35.2, growth: 82.5, shows: 156, audience: 186, lat: 31.23, lng: 121.47 },
+            { name: '北京', rank: 2, boxOffice: 28.6, growth: 75.3, shows: 142, audience: 152, lat: 39.90, lng: 116.40 },
+            { name: '成都', rank: 3, boxOffice: 22.4, growth: 91.2, shows: 118, audience: 128, lat: 30.67, lng: 104.06 },
+            { name: '深圳', rank: 4, boxOffice: 20.1, growth: 68.7, shows: 105, audience: 115, lat: 22.54, lng: 114.06 },
+            { name: '杭州', rank: 5, boxOffice: 18.5, growth: 95.8, shows: 98, audience: 108, lat: 30.25, lng: 120.16 },
+            { name: '重庆', rank: 6, boxOffice: 16.8, growth: 73.4, shows: 92, audience: 98, lat: 29.57, lng: 106.55 },
+            { name: '南京', rank: 7, boxOffice: 15.3, growth: 69.1, shows: 88, audience: 92, lat: 32.06, lng: 118.78 },
+            { name: '武汉', rank: 8, boxOffice: 14.2, growth: 77.6, shows: 85, audience: 88, lat: 30.59, lng: 114.31 },
+            { name: '苏州', rank: 9, boxOffice: 13.1, growth: 88.3, shows: 78, audience: 82, lat: 31.30, lng: 120.62 },
+            { name: '太原', rank: 10, boxOffice: 11.8, growth: 102.5, shows: 72, audience: 76, lat: 37.87, lng: 112.55 }
+        ];
+
+        // 初始化地图图表
+        const mapChart = echarts.init(document.getElementById('mapChart'));
+        const barChart = echarts.init(document.getElementById('barChart'));
+
+        // 地图配置 - 使用散点图模拟地图热力
+        const mapOption = {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'item',
+                backgroundColor: 'rgba(20, 20, 40, 0.95)',
+                borderColor: 'rgba(255,255,255,0.2)',
+                borderWidth: 1,
+                padding: 0,
+                textStyle: { color: '#fff' },
+                formatter: function(params) {
+                    const data = params.data;
+                    const rankClass = data.rank <= 3 ? `rank-${data.rank}` : 'rank-other';
+                    const rankColors = ['', '#ffd700', '#c0c0c0', '#cd7f32'];
+                    const rankColor = data.rank <= 3 ? rankColors[data.rank] : '#4a5568';
+
+                    return `
+                        <div style="padding: 15px; min-width: 280px;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: ${rankColor}; display: flex; align-items: center; justify-content: center; font-weight: 700; color: ${data.rank <= 3 ? '#1a1a2e' : '#fff'};">
+                                    ${data.rank}
+                                </div>
+                                <div>
+                                    <div style="font-size: 18px; font-weight: 700;">${data.name}</div>
+                                    <div style="font-size: 12px; color: #8892b0;">全国排名第 ${data.rank} 位</div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 11px; color: #8892b0;">票房收入</div>
+                                    <div style="font-size: 16px; font-weight: 700; color: #ff6b6b;">${data.boxOffice} 亿元</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 11px; color: #8892b0;">同比增长</div>
+                                    <div style="font-size: 16px; font-weight: 700; color: #64ffda;">+${data.growth}%</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 11px; color: #8892b0;">演出场次</div>
+                                    <div style="font-size: 16px; font-weight: 700;">${data.shows} 场</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                    <div style="font-size: 11px; color: #8892b0;">吸引观众</div>
+                                    <div style="font-size: 16px; font-weight: 700;">${data.audience} 万人</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 11px; color: #8892b0; margin-bottom: 5px;">票房占比趋势</div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: ${(data.boxOffice / 35.2 * 100)}%; height: 100%; background: linear-gradient(90deg, #ff6b6b, #feca57); border-radius: 3px;"></div>
+                                    </div>
+                                    <span style="font-size: 12px; color: #ff6b6b; font-weight: 600;">${(data.boxOffice / 35.2 * 100).toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            geo: {
+                map: 'china',
+                roam: true,
+                zoom: 1.2,
+                center: [105, 36],
+                itemStyle: {
+                    areaColor: 'rgba(255,255,255,0.05)',
+                    borderColor: 'rgba(255,255,255,0.15)',
+                    borderWidth: 1
+                },
+                emphasis: {
+                    itemStyle: {
+                        areaColor: 'rgba(255,255,255,0.1)'
+                    }
+                },
+                label: {
+                    show: false
+                }
+            },
+            series: [
+                {
+                    name: '城市票房',
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    data: cityData.map(item => ({
+                        name: item.name,
+                        value: [item.lng, item.lat, item.boxOffice],
+                        rank: item.rank,
+                        boxOffice: item.boxOffice,
+                        growth: item.growth,
+                        shows: item.shows,
+                        audience: item.audience
+                    })),
+                    symbolSize: function(val) {
+                        return Math.sqrt(val[2]) * 8;
+                    },
+                    showEffectOn: 'render',
+                    rippleEffect: {
+                        brushType: 'stroke',
+                        scale: 3,
+                        period: 4
+                    },
+                    itemStyle: {
+                        color: function(params) {
+                            const val = params.data.value[2];
+                            if (val >= 30) return '#ff4757';
+                            if (val >= 20) return '#ff6348';
+                            if (val >= 15) return '#ff9f43';
+                            return '#feca57';
+                        },
+                        shadowBlur: 20,
+                        shadowColor: 'rgba(255, 71, 87, 0.5)'
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}',
+                        position: 'top',
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        color: '#fff',
+                        backgroundColor: 'rgba(0,0,0,0.3)',
+                        padding: [4, 8],
+                        borderRadius: 4
+                    },
+                    emphasis: {
+                        scale: true,
+                        itemStyle: {
+                            shadowBlur: 30,
+                            shadowColor: 'rgba(255, 107, 107, 0.8)'
+                        }
+                    }
+                }
+            ]
+        };
+
+        // 柱状图配置
+        const barOption = {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(20, 20, 40, 0.95)',
+                borderColor: 'rgba(255,255,255,0.2)',
+                textStyle: { color: '#fff' },
+                formatter: function(params) {
+                    const data = cityData[params[0].dataIndex];
+                    return `
+                        <div style="padding: 10px;">
+                            <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">${data.name} <span style="color: #8892b0; font-size: 12px;">第${data.rank}名</span></div>
+                            <div style="font-size: 14px; color: #ff6b6b; font-weight: 700;">票房：${data.boxOffice} 亿元</div>
+                            <div style="font-size: 12px; color: #64ffda;">同比增长：+${data.growth}%</div>
+                        </div>
+                    `;
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '15%',
+                bottom: '3%',
+                top: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                axisLine: { show: false },
+                axisTick: { show: false },
+                splitLine: {
+                    lineStyle: { color: 'rgba(255,255,255,0.05)' }
+                },
+                axisLabel: {
+                    color: '#8892b0',
+                    fontSize: 11,
+                    formatter: '{value}亿'
+                }
+            },
+            yAxis: {
+                type: 'category',
+                data: cityData.map(item => item.name).reverse(),
+                axisLine: { show: false },
+                axisTick: { show: false },
+                axisLabel: {
+                    color: '#ccd6f6',
+                    fontSize: 13,
+                    fontWeight: 500
+                }
+            },
+            series: [
+                {
+                    name: '票房',
+                    type: 'bar',
+                    data: cityData.map(item => ({
+                        value: item.boxOffice,
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: item.rank <= 3 ? '#ff6b6b' : '#feca57' },
+                                { offset: 1, color: item.rank <= 3 ? '#ff4757' : '#ff9f43' }
+                            ]),
+                            borderRadius: [0, 8, 8, 0]
+                        }
+                    })).reverse(),
+                    barWidth: '60%',
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{c} 亿元',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 600
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(255, 107, 107, 0.5)'
+                        }
+                    }
+                }
+            ]
+        };
+
+        // 加载中国地图
+        fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+            .then(response => response.json())
+            .then(geoJson => {
+                echarts.registerMap('china', geoJson);
+                mapChart.setOption(mapOption);
+            })
+            .catch(err => {
+                console.error('地图加载失败，使用备用方案');
+                // 备用：使用散点图模拟地图
+                const fallbackOption = {
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'item',
+                        backgroundColor: 'rgba(20, 20, 40, 0.95)',
+                        borderColor: 'rgba(255,255,255,0.2)',
+                        padding: 0,
+                        textStyle: { color: '#fff' },
+                        formatter: function(params) {
+                            const data = params.data;
+                            const rankColor = data.rank <= 3 ? ['', '#ffd700', '#c0c0c0', '#cd7f32'][data.rank] : '#4a5568';
+                            return `
+                                <div style="padding: 15px; min-width: 280px;">
+                                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${rankColor}; display: flex; align-items: center; justify-content: center; font-weight: 700; color: ${data.rank <= 3 ? '#1a1a2e' : '#fff'};">
+                                            ${data.rank}
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 18px; font-weight: 700;">${data.name}</div>
+                                            <div style="font-size: 12px; color: #8892b0;">全国排名第 ${data.rank} 位</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                            <div style="font-size: 11px; color: #8892b0;">票房收入</div>
+                                            <div style="font-size: 16px; font-weight: 700; color: #ff6b6b;">${data.boxOffice} 亿元</div>
+                                        </div>
+                                        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                            <div style="font-size: 11px; color: #8892b0;">同比增长</div>
+                                            <div style="font-size: 16px; font-weight: 700; color: #64ffda;">+${data.growth}%</div>
+                                        </div>
+                                        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                            <div style="font-size: 11px; color: #8892b0;">演出场次</div>
+                                            <div style="font-size: 16px; font-weight: 700;">${data.shows} 场</div>
+                                        </div>
+                                        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;">
+                                            <div style="font-size: 11px; color: #8892b0;">吸引观众</div>
+                                            <div style="font-size: 16px; font-weight: 700;">${data.audience} 万人</div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                        <div style="font-size: 11px; color: #8892b0; margin-bottom: 5px;">票房占比趋势</div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                                <div style="width: ${(data.boxOffice / 35.2 * 100)}%; height: 100%; background: linear-gradient(90deg, #ff6b6b, #feca57); border-radius: 3px;"></div>
+                                            </div>
+                                            <span style="font-size: 12px; color: #ff6b6b; font-weight: 600;">${(data.boxOffice / 35.2 * 100).toFixed(1)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    },
+                    xAxis: {
+                        show: false,
+                        min: 70,
+                        max: 140
+                    },
+                    yAxis: {
+                        show: false,
+                        min: 15,
+                        max: 55
+                    },
+                    series: [{
+                        type: 'scatter',
+                        data: cityData.map(item => ({
+                            name: item.name,
+                            value: [item.lng, item.lat, item.boxOffice],
+                            rank: item.rank,
+                            boxOffice: item.boxOffice,
+                            growth: item.growth,
+                            shows: item.shows,
+                            audience: item.audience
+                        })),
+                        symbolSize: function(val) {
+                            return Math.sqrt(val[2]) * 12;
+                        },
+                        itemStyle: {
+                            color: function(params) {
+                                const val = params.data.value[2];
+                                if (val >= 30) return '#ff4757';
+                                if (val >= 20) return '#ff6348';
+                                if (val >= 15) return '#ff9f43';
+                                return '#feca57';
+                            },
+                            shadowBlur: 20,
+                            shadowColor: 'rgba(255, 71, 87, 0.5)'
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}',
+                            position: 'top',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#fff',
+                            backgroundColor: 'rgba(0,0,0,0.3)',
+                            padding: [4, 8],
+                            borderRadius: 4
+                        },
+                        emphasis: {
+                            scale: 1.5,
+                            itemStyle: {
+                                shadowBlur: 30,
+                                shadowColor: 'rgba(255, 107, 107, 0.8)'
+                            }
+                        }
+                    }]
+                };
+                mapChart.setOption(fallbackOption);
+            });
+
+        barChart.setOption(barOption);
+
+        // 地图与城市联动
+        mapChart.on('mouseover', function(params) {
+            if (params.componentType === 'series') {
+                const cityName = params.name;
+                const index = cityData.findIndex(c => c.name === cityName);
+                if (index !== -1) {
+                    barChart.dispatchAction({
+                        type: 'highlight',
+                        seriesIndex: 0,
+                        dataIndex: 9 - index  // 因为柱状图是倒序的
+                    });
+                    barChart.dispatchAction({
+                        type: 'showTip',
+                        seriesIndex: 0,
+                        dataIndex: 9 - index
+                    });
+                }
+            }
+        });
+
+        mapChart.on('mouseout', function(params) {
+            barChart.dispatchAction({
+                type: 'downplay',
+                seriesIndex: 0
+            });
+            barChart.dispatchAction({
+                type: 'hideTip'
+            });
+        });
+
+        // 柱状图与地图联动
+        barChart.on('mouseover', function(params) {
+            const index = 9 - params.dataIndex;  // 因为柱状图是倒序的
+            const city = cityData[index];
+            mapChart.dispatchAction({
+                type: 'highlight',
+                seriesIndex: 0,
+                name: city.name
+            });
+            mapChart.dispatchAction({
+                type: 'showTip',
+                seriesIndex: 0,
+                name: city.name
+            });
+        });
+
+        barChart.on('mouseout', function(params) {
+            mapChart.dispatchAction({
+                type: 'downplay',
+                seriesIndex: 0
+            });
+            mapChart.dispatchAction({
+                type: 'hideTip'
+            });
+        });
+
+        // 响应式
+        window.addEventListener('resize', function() {
+            mapChart.resize();
+            barChart.resize();
+        });
+    </script>
+</body>
+</html>
